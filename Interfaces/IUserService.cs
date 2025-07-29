@@ -4,10 +4,10 @@ namespace UserDirectory.Interfaces
 {
     public interface IUserService
     {
-        void AddUser(User user);
-        bool DeleteUser(int id);
-        List<User> GetAllUsers();
-        User? GetUserById(int id);
-        bool UpdateUser(int id, User user);
+        Task<IEnumerable<User>> GetAllUsersAsync();
+        Task<User> GetUserByIdAsync(int id);
+        Task AddUserAsync(User user);
+        Task<bool> UpdateUserAsync(int id, User user);
+        Task<bool> DeleteUserAsync(int id);
     }
 }

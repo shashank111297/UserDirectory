@@ -16,40 +16,116 @@ namespace UserDirectory.Controllers
         }
 
         [HttpGet]
-        public ActionResult<List<User>> GetAll()
+        public async Task<ActionResult<ApiResponse<IEnumerable<User>>>> GetAll()
         {
-            return _userService.GetAllUsers();
+            var users = await _userService.GetAllUsersAsync();
+            if (!users.Any())
+            {
+                return NotFound(new ErrorResponse
+                {
+                    Status = 404,
+                    Message = "No users found."
+                });
+            }
+
+            return Ok(new ApiResponse<IEnumerable<User>>
+            {
+                Status = 200,
+                Data = users
+            });
         }
 
         [HttpGet("{id}")]
-        public ActionResult<User> Get(int id)
+        public async Task<ActionResult<ApiResponse<User>>> Get(int id)
         {
-            var user = _userService.GetUserById(id);
-            if (user == null) return NotFound();
-            return user;
+            try
+            {
+                var user = await _userService.GetUserByIdAsync(id);
+                return Ok(new ApiResponse<User>
+                {
+                    Status = 200,
+                    Data = user
+                });
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new ErrorResponse
+                {
+                    Status = 404,
+                    Message = $"User with ID {id} not found."
+                });
+            }
         }
 
         [HttpPost]
-        public IActionResult Create(User user)
+        public async Task<ActionResult<ApiResponse<User>>> Create([FromBody] User user)
         {
-            _userService.AddUser(user);
-            return CreatedAtAction(nameof(Get), new { id = user.Id }, user);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Status = 400,
+                    Message = "Invalid user data.",
+                    StackTrace = ModelState.ToString()
+                });
+            }
+
+            await _userService.AddUserAsync(user);
+
+            return CreatedAtAction(nameof(Get), new { id = user.Id }, new ApiResponse<User>
+            {
+                Status = 201,
+                Data = user
+            });
         }
 
         [HttpPut("{id}")]
-        public IActionResult Update(int id, User user)
+        public async Task<IActionResult> Update(int id, [FromBody] User user)
         {
-            var success = _userService.UpdateUser(id, user);
-            if (!success) return NotFound();
-            return NoContent();
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Status = 400,
+                    Message = "Invalid user data."
+                });
+            }
+
+            var success = await _userService.UpdateUserAsync(id, user);
+            if (!success)
+            {
+                return NotFound(new ErrorResponse
+                {
+                    Status = 404,
+                    Message = $"User with ID {id} not found."
+                });
+            }
+
+            return Ok(new ApiResponse<User>
+            {
+                Status = 200,
+                Data = user
+            });
         }
 
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var success = _userService.DeleteUser(id);
-            if (!success) return NotFound();
-            return NoContent();
+            var success = await _userService.DeleteUserAsync(id);
+            if (!success)
+            {
+                return NotFound(new ErrorResponse
+                {
+                    Status = 404,
+                    Message = $"User with ID {id} not found."
+                });
+            }
+
+            return Ok(new ApiResponse<string>
+            {
+                Status = 200,
+                Data = $"User {id} deleted"
+            });
         }
     }
 }

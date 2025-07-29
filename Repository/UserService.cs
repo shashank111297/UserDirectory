@@ -1,45 +1,92 @@
 ﻿using System.Text.Json;
 using UserDirectory.Interfaces;
 using UserDirectory.Models;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace UserDirectory.Repository
 {
     public class UserService : IUserService
     {
         private readonly string _filePath;
-        private readonly List<User> _users;
-
-        public UserService(IWebHostEnvironment env)
+        private readonly ILogger<UserService> _logger;
+        private List<User> _users;
+        private readonly JsonSerializerOptions _jsonOptions = new()
         {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = true
+        };
+
+        public UserService(IWebHostEnvironment env, ILogger<UserService> logger)
+        {
+            _logger = logger;
             _filePath = Path.Combine(env.ContentRootPath, "Data", "User.json");
+            _users = new List<User>();
+        }
+
+        private async Task LoadDataAsync()
+        {
+            if (_users.Any()) return; // already loaded
 
             if (File.Exists(_filePath))
             {
-                var json = File.ReadAllText(_filePath);
-                _users = JsonSerializer.Deserialize<List<User>>(json) ?? new List<User>();
+                try
+                {
+                    var json = await File.ReadAllTextAsync(_filePath);
+                    _users = JsonSerializer.Deserialize<List<User>>(json, _jsonOptions) ?? new List<User>();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to load user data.");
+                    _users = new List<User>();
+                }
             }
             else
             {
-                _users = new List<User>();
-                SaveChanges();
+                await SaveChangesAsync(); // create file if not exists
             }
         }
 
-        public List<User> GetAllUsers() => _users;
-
-        public User? GetUserById(int id) => _users.FirstOrDefault(u => u.Id == id);
-
-        public void AddUser(User user)
+        public async Task<IEnumerable<User>> GetAllUsersAsync()
         {
-            user.Id = _users.Any() ? _users.Max(u => u.Id) + 1 : 1;
-            _users.Add(user);
-            SaveChanges();
+            await LoadDataAsync();
+            return _users.AsReadOnly();
         }
 
-        public bool UpdateUser(int id, User user)
+        public async Task<User> GetUserByIdAsync(int id)
         {
-            var existingUser = GetUserById(id);
-            if (existingUser == null) return false;
+            await LoadDataAsync();
+            var user = _users.FirstOrDefault(u => u.Id == id);
+            if (user == null)
+            {
+                _logger.LogWarning("User with ID {UserId} not found.", id);
+                throw new KeyNotFoundException($"User with ID {id} not found.");
+            }
+            return user;
+        }
+
+        public async Task AddUserAsync(User user)
+        {
+            if (user == null) throw new ArgumentNullException(nameof(user));
+
+            await LoadDataAsync();
+            user.Id = _users.Any() ? _users.Max(u => u.Id) + 1 : 1;
+            _users.Add(user);
+            await SaveChangesAsync();
+            _logger.LogInformation("User with ID {UserId} added.", user.Id);
+        }
+
+        public async Task<bool> UpdateUserAsync(int id, User user)
+        {
+            if (user == null) throw new ArgumentNullException(nameof(user));
+
+            await LoadDataAsync();
+            var existingUser = _users.FirstOrDefault(u => u.Id == id);
+            if (existingUser == null)
+            {
+                _logger.LogWarning("Update failed: User with ID {UserId} not found.", id);
+                return false;
+            }
 
             existingUser.Name = user.Name;
             existingUser.Username = user.Username;
@@ -49,29 +96,45 @@ namespace UserDirectory.Repository
             existingUser.Website = user.Website;
             existingUser.Company = user.Company;
 
-            SaveChanges();
+            await SaveChangesAsync();
+            _logger.LogInformation("User with ID {UserId} updated.", id);
             return true;
         }
 
-        public bool DeleteUser(int id)
+        public async Task<bool> DeleteUserAsync(int id)
         {
-            var user = GetUserById(id);
-            if (user == null) return false;
+            await LoadDataAsync();
+            var user = _users.FirstOrDefault(u => u.Id == id);
+            if (user == null)
+            {
+                _logger.LogWarning("Delete failed: User with ID {UserId} not found.", id);
+                return false;
+            }
 
             _users.Remove(user);
-            SaveChanges();
+            await SaveChangesAsync();
+            _logger.LogInformation("User with ID {UserId} deleted.", id);
             return true;
         }
 
-        private void SaveChanges()
+        private async Task SaveChangesAsync()
         {
-            var json = JsonSerializer.Serialize(_users, new JsonSerializerOptions { WriteIndented = true });
-            var dir = Path.GetDirectoryName(_filePath);
-            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+            try
             {
-                Directory.CreateDirectory(dir);
+                var dir = Path.GetDirectoryName(_filePath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+
+                var json = JsonSerializer.Serialize(_users, _jsonOptions);
+                await File.WriteAllTextAsync(_filePath, json);
             }
-            File.WriteAllText(_filePath, json);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save user data.");
+                throw;
+            }
         }
     }
 }
