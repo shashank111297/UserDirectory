@@ -4,10 +4,10 @@ using UserDirectory.Models;
 
 namespace UserDirectory.Repository
 {
-    public class UserService : IUserRepository
+    public class UserService : IUserService
     {
 
-        private readonly string _filePath = "Data/users.json";
+        private readonly string _filePath = "Data/User.json";
         private List<User> _users;
 
         public UserService()

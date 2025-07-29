@@ -25,6 +25,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Update="Controllers\UserControllers.cs">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Update="users.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>

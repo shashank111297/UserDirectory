@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace UserDirectory.Interfaces
 {
-    public interface IUserRepository
+    public interface IUserService
     {
         void AddUser(User user);
         bool DeleteUser(int id);
