@@ -1,7 +1,6 @@
 ﻿using System.Text.Json;
 using UserDirectory.Interfaces;
 using UserDirectory.Models;
-using Microsoft.AspNetCore.Hosting;
 
 namespace UserDirectory.Repository
 {

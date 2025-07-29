@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using UserDirectory.Interfaces;
 using UserDirectory.Models;
-using UserDirectory.Repository;
 
 namespace UserDirectory.Controllers
 {
