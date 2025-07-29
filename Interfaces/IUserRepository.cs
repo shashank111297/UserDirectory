@@ -6,5 +6,6 @@ namespace UserDirectory.Interfaces
     public interface IUserRepository
     {
         List<User> GetAllUsers();
+        User? GetUserById(int id);
     }
 }

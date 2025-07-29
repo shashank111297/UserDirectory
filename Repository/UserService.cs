@@ -25,6 +25,8 @@ namespace UserDirectory.Repository
         }
         public List<User> GetAllUsers() => _users;
 
+        public User? GetUserById(int id) => _users.FirstOrDefault(u => u.Id == id);
+
         private void SaveChanges()
         {
             var json = JsonSerializer.Serialize(_users, new JsonSerializerOptions { WriteIndented = true });
