@@ -13,10 +13,18 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Compile Include="Models\**\*.cs" />
-		<Compile Include="Interfaces\**\*.cs" />
-		<Compile Include="Repositories\**\*.cs" />
-		<Compile Include="Controllers\**\*.cs" />
+	  <Compile Update="Models\**">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Compile>
+		<Compile Update="Interfaces\**">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Compile>
+		<Compile Update="Repository\**">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Update="users.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
