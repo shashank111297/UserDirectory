@@ -1,17 +1,19 @@
 ﻿using System.Text.Json;
 using UserDirectory.Interfaces;
 using UserDirectory.Models;
+using Microsoft.AspNetCore.Hosting;
 
 namespace UserDirectory.Repository
 {
     public class UserService : IUserService
     {
+        private readonly string _filePath;
+        private readonly List<User> _users;
 
-        private readonly string _filePath = "Data/User.json";
-        private List<User> _users;
-
-        public UserService()
+        public UserService(IWebHostEnvironment env)
         {
+            _filePath = Path.Combine(env.ContentRootPath, "Data", "User.json");
+
             if (File.Exists(_filePath))
             {
                 var json = File.ReadAllText(_filePath);
@@ -23,6 +25,7 @@ namespace UserDirectory.Repository
                 SaveChanges();
             }
         }
+
         public List<User> GetAllUsers() => _users;
 
         public User? GetUserById(int id) => _users.FirstOrDefault(u => u.Id == id);
